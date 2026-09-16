@@ -34,7 +34,15 @@ calls their overridden area() methods to output the
 results.  
 
 2. Basic Single Innheritance
-This file illustrates the concept of basic single inheritance, where one class acquires the properties of another. The base class, Person, is designed to store and display a name string. The derived class, Student, inherits from Person and extends its functionality by adding a private integer for a roll number. By calling the inherited displayName() method inside its own displayStudent() method, the Student class cleanly displays both the inherited name and its specific roll number.  
+This file illustrates the concept of basic single 
+inheritance, where one class acquires the properties of 
+another. The base class, Person, is designed to store and 
+display a name string. The derived class, Student, inherits 
+from Person and extends its functionality by adding a 
+private integer for a roll number. By calling the inherited 
+displayName() method inside its own displayStudent() method, 
+the Student class cleanly displays both the inherited name 
+and its specific roll number.  
 
 3. Constructor and Destructor Order
 This code provides a clear demonstration of the execution 

@@ -7,7 +7,7 @@ int main() { // Program execution starts here.
     std::ifstream sourceFile("message.txt"); // Open the original file for reading.
 
     std::ofstream destinationFile(
-        "message_copy.txt"
+        "cpp_lines.txt"
     ); // Create or replace the destination file.
 
     if (!sourceFile) { // Check whether the source file opened successfully.
@@ -25,11 +25,13 @@ int main() { // Program execution starts here.
     std::string line; // Stores each line temporarily during copying.
 
     while (std::getline(sourceFile, line)) { // Read each source line until end-of-file.
-        destinationFile << line << '\n'; // Write that line to the destination.
+        if (line.find("C++") != std::string::npos) {
+            destinationFile << line << '\n'; // Write only lines containing C++.
+        }
     }
 
     std::cout
-        << "File copied successfully to message_copy.txt\n"; // Report successful copying.
+        << "Lines containing C++ copied to cpp_lines.txt\n";
 
     return 0; // Report successful completion.
 }

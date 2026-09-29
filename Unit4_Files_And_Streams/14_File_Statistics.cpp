@@ -1,6 +1,8 @@
 #include <cctype>  // Provides character classification and case conversion.
+#include <array>   // Stores character frequencies by byte value.
 #include <fstream> // Provides input file stream support.
 #include <iostream> // Provides console input and output streams.
+#include <sstream> // Builds the report for both the console and report.txt.
 #include <string> // Provides the user-supplied file name.
 
 bool isVowel(char ch) { // Return whether the supplied character is an English vowel.
@@ -45,8 +47,13 @@ int main() { // Program execution starts here.
     std::size_t words = 0; // Counts transitions from whitespace into words.
     std::size_t characters = 0; // Counts every character read from the file.
     std::size_t vowels = 0; // Counts alphabetic characters recognized as vowels.
+    std::size_t consonants = 0; // Counts alphabetic characters that are not vowels.
     std::size_t digits = 0; // Counts numeric digit characters.
     std::size_t spaces = 0; // Counts ordinary space characters, not tabs or newlines.
+    std::size_t punctuation = 0; // Counts punctuation characters.
+    std::array<std::size_t, 256> characterFrequencies{};
+    unsigned char mostFrequentCharacter = 0;
+    std::size_t mostFrequentCount = 0;
 
     bool insideWord = false; // Tracks whether the current character belongs to a word.
 
@@ -55,6 +62,12 @@ int main() { // Program execution starts here.
     while (inputFile.get(ch)) { // Analyze the file one character at a time.
 
         ++characters; // Count the character just read.
+        const unsigned char character = static_cast<unsigned char>(ch);
+        const std::size_t frequency = ++characterFrequencies[character];
+        if (frequency > mostFrequentCount) {
+            mostFrequentCharacter = character;
+            mostFrequentCount = frequency;
+        }
 
         if (ch == '\n') { // Newline characters mark line endings.
             ++lines; // Count this line ending.
@@ -76,21 +89,20 @@ int main() { // Program execution starts here.
             insideWord = true; // Mark subsequent characters as part of that word.
         }
 
-        if (
-            std::isalpha(
-                static_cast<unsigned char>(ch)
-            ) &&
-            isVowel(ch)
-        ) { // Count alphabetic characters only when the helper recognizes a vowel.
-            ++vowels; // Add this character to the vowel total.
+        if (std::isalpha(character)) {
+            if (isVowel(ch)) {
+                ++vowels;
+            } else {
+                ++consonants;
+            }
         }
 
-        if (
-            std::isdigit(
-                static_cast<unsigned char>(ch)
-            )
-        ) { // Test whether this character is a decimal digit.
-            ++digits; // Add this digit to the total.
+        if (std::isdigit(character)) {
+            ++digits;
+        }
+
+        if (std::ispunct(character)) {
+            ++punctuation;
         }
     }
 
@@ -112,37 +124,71 @@ int main() { // Program execution starts here.
         }
     }
 
-    std::cout << "\nFile Statistics\n"; // Print a heading for the calculated totals.
+    std::string frequentCharacterDescription = "None (file is empty)";
+    if (characters > 0) {
+        switch (mostFrequentCharacter) {
+        case '\n':
+            frequentCharacterDescription = "newline";
+            break;
+        case '\r':
+            frequentCharacterDescription = "carriage return";
+            break;
+        case '\t':
+            frequentCharacterDescription = "tab";
+            break;
+        case ' ':
+            frequentCharacterDescription = "space";
+            break;
+        case '\'':
+            frequentCharacterDescription = "apostrophe";
+            break;
+        case '"':
+            frequentCharacterDescription = "double quote";
+            break;
+        case '\\':
+            frequentCharacterDescription = "backslash";
+            break;
+        default:
+            if (std::isprint(mostFrequentCharacter)) {
+                frequentCharacterDescription =
+                    std::string("'") + static_cast<char>(mostFrequentCharacter) + "'";
+            } else {
+                frequentCharacterDescription = "non-printing character";
+            }
+        }
+    }
 
-    std::cout
-        << "Lines: "
-        << lines
-        << '\n'; // Display the line count.
+    std::ostringstream report;
+    report << "File Statistics for " << fileName << '\n'
+           << "Lines: " << lines << '\n'
+           << "Words: " << words << '\n'
+           << "Characters: " << characters << '\n'
+           << "Vowels: " << vowels << '\n'
+           << "Consonants: " << consonants << '\n'
+           << "Digits: " << digits << '\n'
+           << "Spaces: " << spaces << '\n'
+           << "Punctuation: " << punctuation << '\n'
+           << "Most frequent character: " << frequentCharacterDescription;
 
-    std::cout
-        << "Words: "
-        << words
-        << '\n'; // Display the word count.
+    if (characters > 0) {
+        report << " (" << mostFrequentCount << " occurrence(s))";
+    }
+    report << '\n';
 
-    std::cout
-        << "Characters: "
-        << characters
-        << '\n'; // Display the character count.
+    std::ofstream reportFile("report.txt");
+    if (!reportFile) {
+        std::cerr << "Error: Could not create report.txt\n";
+        return 1;
+    }
 
-    std::cout
-        << "Vowels: "
-        << vowels
-        << '\n'; // Display the vowel count.
+    reportFile << report.str();
+    if (!reportFile) {
+        std::cerr << "Error: Could not write report.txt\n";
+        return 1;
+    }
 
-    std::cout
-        << "Digits: "
-        << digits
-        << '\n'; // Display the digit count.
-
-    std::cout
-        << "Spaces: "
-        << spaces
-        << '\n'; // Display the ordinary-space count.
+    std::cout << report.str();
+    std::cout << "Report saved to report.txt\n";
 
     return 0; // Report successful completion.
 }

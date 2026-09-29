@@ -85,47 +85,44 @@ int main() { // Program execution starts here.
         return 1; // Stop if the records cannot be read.
     }
 
-    int recordNumber; // Stores the one-based record number requested by the user.
+    int targetRollNumber; // Stores the roll number requested by the user.
 
     std::cout
-        << "Enter record number to read (1 to 3): ";
+        << "Enter roll number to search: ";
 
-    std::cin >> recordNumber; // Read which of the three records to select.
+    std::cin >> targetRollNumber; // Read the roll number to find.
 
-    if (recordNumber < 1 || recordNumber > 3) { // Reject record numbers outside the available range.
+    StudentRecord selectedStudent{}; // Holds the record matching the requested roll number.
+    bool found = false;
 
-        std::cerr
-            << "Invalid record number.\n";
+    for (int index = 0; index < 3 && !found; ++index) {
+        const std::streamoff offset =
+            static_cast<std::streamoff>(index) *
+            static_cast<std::streamoff>(sizeof(StudentRecord));
 
-        return 1; // Stop because the requested offset would be invalid.
+        inputFile.seekg(offset, std::ios::beg);
+
+        StudentRecord currentStudent{};
+        inputFile.read(
+            reinterpret_cast<char*>(&currentStudent),
+            sizeof(currentStudent)
+        );
+
+        if (!inputFile) {
+            std::cerr << "Error: Could not read record from records.dat\n";
+            return 1;
+        }
+
+        if (currentStudent.rollNumber == targetRollNumber) {
+            selectedStudent = currentStudent;
+            found = true;
+        }
     }
 
-    const std::streamoff offset =
-        static_cast<std::streamoff>(
-            recordNumber - 1
-        ) *
-        static_cast<std::streamoff>(
-            sizeof(StudentRecord)
-        ); // Convert the one-based record number to a zero-based byte offset.
-
-    inputFile.seekg(
-        offset,
-        std::ios::beg
-    ); // Move the read pointer directly to the selected record.
-
-    StudentRecord selectedStudent{}; // Holds the record read from the chosen file position.
-
-    inputFile.read(
-        reinterpret_cast<char*>(&selectedStudent),
-        sizeof(selectedStudent)
-    ); // Read one complete record starting at the calculated offset.
-
-    if (!inputFile) { // Detect a failed or incomplete read.
-
-        std::cerr
-            << "Error: Could not read selected record.\n";
-
-        return 1; // Stop rather than print incomplete record data.
+    if (!found) {
+        std::cout << "Student with roll number " << targetRollNumber
+                  << " was not found.\n";
+        return 0;
     }
 
     std::cout

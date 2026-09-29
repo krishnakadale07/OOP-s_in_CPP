@@ -1,6 +1,7 @@
 #include <cstdio>  // Provides remove and rename for replacing the data file.
 #include <fstream> // Provides input and output file streams.
 #include <iostream> // Provides console input and output streams.
+#include <limits> // Provides the maximum stream size used when clearing input.
 #include <sstream> // Provides string streams for splitting record fields.
 #include <string> // Provides strings for lines and record fields.
 
@@ -21,12 +22,22 @@ int main() { // Program execution starts here.
     }
 
     int targetRollNumber; // Stores which student's record should change.
+    std::string updatedName;
     double updatedMarks; // Stores the replacement marks value.
 
     std::cout
         << "Enter roll number to update: ";
 
     std::cin >> targetRollNumber; // Read the roll number to update.
+
+    std::cout
+        << "Enter updated name: ";
+
+    std::cin.ignore(
+        std::numeric_limits<std::streamsize>::max(),
+        '\n'
+    );
+    std::getline(std::cin, updatedName);
 
     std::cout
         << "Enter updated marks: ";
@@ -43,13 +54,17 @@ int main() { // Program execution starts here.
 
         std::string rollText; // Receives the roll number field.
         std::string name; // Receives the student's name field.
+        std::string courseName;
+        std::string mobileNumber;
         std::string marksText; // Receives the existing marks field.
 
         if (
             std::getline(record, rollText, '|') &&
             std::getline(record, name, '|') &&
+            std::getline(record, courseName, '|') &&
+            std::getline(record, mobileNumber, '|') &&
             std::getline(record, marksText)
-        ) { // Update or copy only records with all required fields.
+        ) { // Update or copy only records with all five fields.
 
             int rollNumber =
                 std::stoi(rollText); // Convert the roll number field to an integer.
@@ -59,7 +74,11 @@ int main() { // Program execution starts here.
                 temporaryFile
                     << rollNumber
                     << '|'
-                    << name
+                    << updatedName
+                    << '|'
+                    << courseName
+                    << '|'
+                    << mobileNumber
                     << '|'
                     << updatedMarks
                     << '\n'; // Write the updated record to the temporary file.
@@ -111,7 +130,7 @@ int main() { // Program execution starts here.
     }
 
     std::cout
-        << "Student marks updated successfully.\n"; // Confirm that the record was replaced.
+        << "Student name and marks updated successfully.\n";
 
     return 0; // Report successful completion.
 }

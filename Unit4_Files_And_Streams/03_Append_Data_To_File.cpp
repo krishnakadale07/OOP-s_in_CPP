@@ -1,7 +1,17 @@
 #include <fstream>  // Provides output file stream support.
 #include <iostream> // Provides console output streams.
+#include <string>   // Provides std::string for user input.
 
 int main() { // Program execution starts here.
+
+    std::string name;
+    std::string date;
+
+    std::cout << "Enter your name: ";
+    std::getline(std::cin, name);
+
+    std::cout << "Enter the current date: ";
+    std::getline(std::cin, date);
 
     std::ofstream outputFile(
         "message.txt",
@@ -14,8 +24,7 @@ int main() { // Program execution starts here.
         return 1; // Stop with an error status if opening failed.
     }
 
-    outputFile
-        << "This line was added using append mode.\n"; // Add a line without replacing existing contents.
+    outputFile << "Name: " << name << ", Date: " << date << '\n';
 
     outputFile.close(); // Close the file and finish writing buffered data.
 

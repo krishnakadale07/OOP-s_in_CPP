@@ -18,6 +18,8 @@ int main() { // Program execution starts here.
 
     int rollNumber; // Stores the student's numeric roll number.
     std::string name; // Stores the student's full name.
+    std::string courseName; // Stores the student's course name.
+    std::string mobileNumber; // Stores the mobile number as text to preserve leading zeroes.
     double marks; // Stores the student's marks, including fractional values.
 
     std::cout << "Enter roll number: "; // Ask for the student's identifier.
@@ -32,6 +34,12 @@ int main() { // Program execution starts here.
 
     std::getline(std::cin, name); // Read the full name, including any spaces.
 
+    std::cout << "Enter course name: ";
+    std::getline(std::cin, courseName);
+
+    std::cout << "Enter mobile number: ";
+    std::getline(std::cin, mobileNumber);
+
     std::cout << "Enter marks: "; // Ask for the student's marks.
     std::cin >> marks; // Read the numeric marks value.
 
@@ -39,6 +47,10 @@ int main() { // Program execution starts here.
         << rollNumber
         << '|'
         << name
+        << '|'
+        << courseName
+        << '|'
+        << mobileNumber
         << '|'
         << marks
         << '\n'; // Save fields separated by | so they can be parsed later.

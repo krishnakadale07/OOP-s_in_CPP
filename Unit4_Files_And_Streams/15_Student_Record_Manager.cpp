@@ -1,288 +1,290 @@
+#include <algorithm> // Provides remove_if for deleting a student.
 #include <cstdio>  // Provides remove and rename for replacing the records file.
 #include <fstream> // Provides input and output file streams.
+#include <iomanip> // Provides aligned table columns.
 #include <iostream> // Provides console input and output streams.
 #include <limits> // Provides the input-buffer size used when discarding a newline.
 #include <sstream> // Provides string streams for parsing record fields.
 #include <string> // Provides strings for names, lines, and record fields.
+#include <vector> // Stores parsed student records.
+
+struct StudentRecord {
+    int rollNumber;
+    std::string name;
+    std::string course;
+    std::string department;
+    double marks;
+};
+
+bool parseStudentRecord(const std::string& line, StudentRecord& student) {
+    std::stringstream record(line);
+    std::vector<std::string> fields;
+    std::string field;
+
+    while (std::getline(record, field, '|')) {
+        fields.push_back(field);
+    }
+
+    if (fields.size() != 3 && fields.size() != 5) {
+        return false;
+    }
+
+    std::istringstream rollInput(fields[0]);
+    if (!(rollInput >> student.rollNumber)) {
+        return false;
+    }
+
+    student.name = fields[1];
+    const std::string& marksText = fields.size() == 3 ? fields[2] : fields[4];
+
+    if (fields.size() == 5) {
+        student.course = fields[2];
+        student.department = fields[3];
+    }
+
+    std::istringstream marksInput(marksText);
+    return static_cast<bool>(marksInput >> student.marks);
+}
+
+std::vector<StudentRecord> loadStudents() {
+    std::vector<StudentRecord> students;
+    std::ifstream inputFile("student_records.txt");
+    std::string line;
+
+    while (std::getline(inputFile, line)) {
+        StudentRecord student{};
+        if (parseStudentRecord(line, student)) {
+            students.push_back(student);
+        }
+    }
+
+    return students;
+}
+
+void writeStudentRecord(std::ostream& output, const StudentRecord& student) {
+    output << student.rollNumber << '|'
+           << student.name << '|'
+           << student.course << '|'
+           << student.department << '|'
+           << student.marks << '\n';
+}
+
+bool saveStudents(const std::vector<StudentRecord>& students) {
+    std::ofstream temporaryFile("student_records_temp.txt");
+    if (!temporaryFile) {
+        return false;
+    }
+
+    for (const StudentRecord& student : students) {
+        writeStudentRecord(temporaryFile, student);
+    }
+    temporaryFile.close();
+
+    if (!temporaryFile || std::remove("student_records.txt") != 0) {
+        std::remove("student_records_temp.txt");
+        return false;
+    }
+
+    if (std::rename("student_records_temp.txt", "student_records.txt") != 0) {
+        return false;
+    }
+
+    return true;
+}
+
+bool readRollNumber(const std::string& prompt, int& rollNumber) {
+    std::cout << prompt;
+    if (std::cin >> rollNumber) {
+        return true;
+    }
+
+    std::cin.clear();
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::cout << "Invalid roll number.\n";
+    return false;
+}
+
+bool readValidMarks(double& marks) {
+    while (true) {
+        std::cout << "Enter marks (0-100): ";
+        if (!(std::cin >> marks)) {
+            if (std::cin.eof()) {
+                return false;
+            }
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cout << "Enter a numeric mark between 0 and 100.\n";
+            continue;
+        }
+
+        if (marks >= 0 && marks <= 100) {
+            return true;
+        }
+        std::cout << "Marks must be between 0 and 100.\n";
+    }
+}
+
+std::string gradeForMarks(double marks) {
+    if (marks >= 90) return "A";
+    if (marks >= 80) return "B";
+    if (marks >= 70) return "C";
+    if (marks >= 60) return "D";
+    return "F";
+}
+
+void printStudent(const StudentRecord& student) {
+    std::cout << "Roll Number: " << student.rollNumber << '\n'
+              << "Name: " << student.name << '\n'
+              << "Course: " << student.course << '\n'
+              << "Department: " << student.department << '\n'
+              << "Marks: " << student.marks << '\n'
+              << "Grade: " << gradeForMarks(student.marks) << '\n';
+}
 
 void addStudent() { // Collect one student record and append it to the data file.
 
-    std::ofstream outputFile(
-        "student_records.txt",
-        std::ios::app // Preserve earlier records and add the new record at the end.
-    ); // Open the student records file for appending.
-
-    if (!outputFile) { // Check whether the file opened successfully.
-
-        std::cerr
-            << "Error: Could not open student_records.txt\n";
-
-        return; // Leave without prompting if the record cannot be saved.
+    StudentRecord student{};
+    if (!readRollNumber("Enter roll number: ", student.rollNumber)) {
+        return;
     }
 
-    int rollNumber; // Stores the student's numeric roll number.
-    std::string name; // Stores the student's full name.
-    double marks; // Stores the student's marks.
+    const std::vector<StudentRecord> students = loadStudents();
+    for (const StudentRecord& existing : students) {
+        if (existing.rollNumber == student.rollNumber) {
+            std::cout << "That roll number already exists.\n";
+            return;
+        }
+    }
 
-    std::cout << "Enter roll number: "; // Prompt for the student identifier.
-    std::cin >> rollNumber; // Read the numeric roll number.
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::cout << "Enter name: ";
+    std::getline(std::cin, student.name);
+    std::cout << "Enter course: ";
+    std::getline(std::cin, student.course);
+    std::cout << "Enter department: ";
+    std::getline(std::cin, student.department);
 
-    std::cout << "Enter name: "; // Prompt for the student's name.
+    if (!readValidMarks(student.marks)) {
+        return;
+    }
 
-    std::cin.ignore(
-        std::numeric_limits<std::streamsize>::max(),
-        '\n'
-    ); // Discard the leftover newline before reading a complete name line.
+    std::ofstream outputFile("student_records.txt", std::ios::app);
+    if (!outputFile) {
+        std::cerr << "Error: Could not open student_records.txt\n";
+        return;
+    }
 
-    std::getline(
-        std::cin,
-        name
-    ); // Read the full name, including spaces.
+    writeStudentRecord(outputFile, student);
+    if (!outputFile) {
+        std::cerr << "Error: Could not save the student record.\n";
+        return;
+    }
 
-    std::cout << "Enter marks: "; // Prompt for the student's marks.
-    std::cin >> marks; // Read the numeric marks value.
-
-    outputFile
-        << rollNumber
-        << '|'
-        << name
-        << '|'
-        << marks
-        << '\n'; // Save the three fields separated by | for later parsing.
-
-    std::cout
-        << "Record added successfully.\n"; // Confirm that the record was saved.
+    std::cout << "Record added successfully. Grade: "
+              << gradeForMarks(student.marks) << '\n';
 }
 
-    void displayStudents() { // Read and print every valid student record.
-
-    std::ifstream inputFile(
-        "student_records.txt"
-    ); // Open the records file for reading.
-
-    if (!inputFile) { // Handle the case where no records file exists or can be opened.
-
-        std::cout
-            << "No student record file found.\n";
-
-        return; // Leave because there are no records to display.
+void displayStudents() {
+    const std::vector<StudentRecord> students = loadStudents();
+    if (students.empty()) {
+        std::cout << "No student records found.\n";
+        return;
     }
 
-    std::string line; // Holds one record line from the file at a time.
-
-    std::cout
-        << "\nRoll No.\tName\t\tMarks\n"; // Print headings for the displayed columns.
-
-    std::cout
-        << "----------------------------------------\n"; // Separate the headings from the records.
-
-    while (std::getline(inputFile, line)) { // Read each saved record line.
-
-        std::stringstream record(line); // Treat the current line as a stream of fields.
-
-        std::string rollText; // Receives the roll number field.
-        std::string name; // Receives the student's name field.
-        std::string marksText; // Receives the student's marks field.
-
-        if (
-            std::getline(record, rollText, '|') &&
-            std::getline(record, name, '|') &&
-            std::getline(record, marksText)
-        ) { // Display only records whose three fields were all extracted.
-
-            std::cout
-                << rollText
-                << "\t\t"
-                << name
-                << "\t\t"
-                << marksText
-                << '\n'; // Print the parsed fields as one table row.
-        }
+    std::cout << '\n'
+              << std::left << std::setw(12) << "Roll No."
+              << std::setw(24) << "Name"
+              << std::setw(20) << "Course"
+              << std::setw(20) << "Department"
+              << std::setw(10) << "Marks"
+              << "Grade\n";
+    for (const StudentRecord& student : students) {
+        std::cout << std::left << std::setw(12) << student.rollNumber
+                  << std::setw(24) << student.name
+                  << std::setw(20) << student.course
+                  << std::setw(20) << student.department
+                  << std::setw(10) << student.marks
+                  << gradeForMarks(student.marks) << '\n';
     }
 }
 
 void searchStudent() { // Find and display the record with a requested roll number.
 
-    std::ifstream inputFile(
-        "student_records.txt"
-    ); // Open the records file for reading.
-
-    if (!inputFile) { // Check whether the records file is available.
-
-        std::cout
-            << "No student record file found.\n";
-
-        return; // Leave because there are no records to search.
+    int targetRoll;
+    if (!readRollNumber("Enter roll number to search: ", targetRoll)) {
+        return;
     }
 
-    int targetRoll; // Stores the roll number the user wants to find.
-
-    std::cout
-        << "Enter roll number to search: ";
-
-    std::cin >> targetRoll; // Read the requested roll number.
-
-    std::string line; // Holds one record line from the file.
-
-    bool found = false; // Tracks whether a matching student has been found.
-
-    while (std::getline(inputFile, line)) { // Search records one line at a time.
-
-        std::stringstream record(line); // Prepare the current line for delimiter parsing.
-
-        std::string rollText; // Receives the saved roll number.
-        std::string name; // Receives the saved name.
-        std::string marksText; // Receives the saved marks.
-
-        if (
-            std::getline(record, rollText, '|') &&
-            std::getline(record, name, '|') &&
-            std::getline(record, marksText)
-        ) { // Compare records only after all fields were read successfully.
-
-            if (std::stoi(rollText) == targetRoll) { // Convert and compare this record's roll number.
-
-                std::cout
-                    << "Record Found\n";
-
-                std::cout
-                    << "Roll Number: "
-                    << rollText
-                    << '\n'; // Print the matching student's roll number.
-
-                std::cout
-                    << "Name: "
-                    << name
-                    << '\n'; // Print the matching student's name.
-
-                std::cout
-                    << "Marks: "
-                    << marksText
-                    << '\n'; // Print the matching student's marks.
-
-                found = true; // Remember that the requested record was displayed.
-
-                break; // Stop searching once the matching record is found.
-            }
+    for (const StudentRecord& student : loadStudents()) {
+        if (student.rollNumber == targetRoll) {
+            printStudent(student);
+            return;
         }
     }
 
-    if (!found) { // Report when no record has the requested roll number.
-
-        std::cout
-            << "Student not found.\n"; // Inform the user that the search had no match.
-    }
+    std::cout << "Student not found.\n";
 }
 
-void updateMarks() { // Replace one student's marks while preserving all other records.
-
-    std::ifstream inputFile(
-        "student_records.txt"
-    ); // Open the original records for reading.
-
-    std::ofstream temporaryFile(
-        "student_records_temp.txt"
-    ); // Create a temporary output file for the rewritten records.
-
-    if (!inputFile || !temporaryFile) { // Require both streams before beginning the update.
-
-        std::cerr
-            << "Error: Could not open record file(s).\n";
-
-        return; // Leave if either file could not be opened.
+void updateMarks() {
+    std::vector<StudentRecord> students = loadStudents();
+    int targetRoll;
+    if (!readRollNumber("Enter roll number to update: ", targetRoll)) {
+        return;
     }
 
-    int targetRoll; // Stores which student's record should be updated.
-    double newMarks; // Stores the replacement marks value.
-
-    std::cout
-        << "Enter roll number to update: ";
-
-    std::cin >> targetRoll; // Read the target student's roll number.
-
-    std::cout
-        << "Enter new marks: ";
-
-    std::cin >> newMarks; // Read the new marks value.
-
-    std::string line; // Holds one original record line at a time.
-
-    bool found = false; // Tracks whether the target record appears in the file.
-
-    while (std::getline(inputFile, line)) { // Process every saved student record.
-
-        std::stringstream record(line); // Prepare the line for field-by-field parsing.
-
-        std::string rollText; // Receives the roll number field.
-        std::string name; // Receives the name field.
-        std::string marksText; // Receives the current marks field.
-
-        if (
-            std::getline(record, rollText, '|') &&
-            std::getline(record, name, '|') &&
-            std::getline(record, marksText)
-        ) { // Rewrite records only when each expected field is present.
-
-            if (std::stoi(rollText) == targetRoll) { // Check whether this is the record to update.
-
-                temporaryFile
-                    << rollText
-                    << '|'
-                    << name
-                    << '|'
-                    << newMarks
-                    << '\n'; // Write the target record with the replacement marks.
-
-                found = true; // Remember that the requested record was updated.
-
-            } else { // Keep every nonmatching record unchanged.
-
-                temporaryFile
-                    << line
-                    << '\n'; // Copy the original record into the temporary file.
+    for (StudentRecord& student : students) {
+        if (student.rollNumber == targetRoll) {
+            if (!readValidMarks(student.marks)) {
+                return;
             }
+            if (!saveStudents(students)) {
+                std::cerr << "Error: Could not save the updated records.\n";
+                return;
+            }
+            std::cout << "Marks updated successfully. Grade: "
+                      << gradeForMarks(student.marks) << '\n';
+            return;
         }
     }
 
-    inputFile.close(); // Close the original before attempting to replace it.
-    temporaryFile.close(); // Flush and close the rewritten temporary file.
+    std::cout << "Student not found. No changes made.\n";
+}
 
-    if (!found) { // Do not replace the original when no student matched.
-
-        std::remove(
-            "student_records_temp.txt"
-        ); // Remove the temporary file because it contains no useful update.
-
-        std::cout
-            << "Student not found. "
-            << "No changes made.\n"; // Explain that the original file was left unchanged.
-
-        return; // Finish this operation without replacing the data file.
+void deleteStudent() {
+    std::vector<StudentRecord> students = loadStudents();
+    int targetRoll;
+    if (!readRollNumber("Enter roll number to delete: ", targetRoll)) {
+        return;
     }
 
-    if (
-        std::remove(
-            "student_records.txt"
-        ) != 0 ||
-        std::rename(
-            "student_records_temp.txt",
-            "student_records.txt"
-        ) != 0
-    ) { // Remove the original and rename the completed temporary file into its place.
+    const auto originalSize = students.size();
+    students.erase(
+        std::remove_if(
+            students.begin(),
+            students.end(),
+            [targetRoll](const StudentRecord& student) {
+                return student.rollNumber == targetRoll;
+            }
+        ),
+        students.end()
+    );
 
-        std::cerr
-            << "Error: Could not replace the record file.\n";
-
-        return; // Leave if the updated file could not be installed.
+    if (students.size() == originalSize) {
+        std::cout << "Student not found. No changes made.\n";
+        return;
     }
 
-    std::cout
-        << "Marks updated successfully.\n"; // Confirm that the update completed.
+    if (!saveStudents(students)) {
+        std::cerr << "Error: Could not save the updated records.\n";
+        return;
+    }
+
+    std::cout << "Student record deleted successfully.\n";
 }
 
 int main() { // Program execution starts here.
 
-    int choice; // Stores the user's menu selection.
+    int choice = -1; // Stores the user's menu selection.
 
     do { // Display the menu at least once and repeat until the user exits.
 
@@ -302,12 +304,23 @@ int main() { // Program execution starts here.
             << "4. Update Marks\n"; // List the update-marks option.
 
         std::cout
+            << "5. Delete Student\n";
+
+        std::cout
             << "0. Exit\n"; // List the exit option.
 
         std::cout
             << "Enter choice: "; // Prompt for a menu selection.
 
-        std::cin >> choice; // Read the selected option.
+        if (!(std::cin >> choice)) {
+            if (std::cin.eof()) {
+                break;
+            }
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cout << "Invalid choice. Try again.\n";
+            continue;
+        }
 
         switch (choice) { // Call the function corresponding to the selected option.
 
@@ -326,6 +339,10 @@ int main() { // Program execution starts here.
             case 4:
                 updateMarks(); // Update the marks for a student.
                 break; // End this menu choice.
+
+            case 5:
+                deleteStudent();
+                break;
 
             case 0:
                 std::cout

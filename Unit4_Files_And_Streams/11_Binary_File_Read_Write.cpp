@@ -1,4 +1,3 @@
-#include <cstring> // Provides bounded copying for the fixed-size name array.
 #include <fstream> // Provides binary input and output file streams.
 #include <iostream> // Provides console input and output streams.
 
@@ -10,17 +9,12 @@ struct StudentRecord { // Groups the fields that will be stored together in bina
 
 int main() { // Program execution starts here.
 
-    StudentRecord student{}; // Zero-initialize all fields before assigning values.
-
-    student.rollNumber = 101; // Set the example student's roll number.
-
-    std::strncpy(
-        student.name,
-        "Amit Patil",
-        sizeof(student.name) - 1
-    ); // Copy the name while leaving room for the terminating null character.
-
-    student.marks = 85.5F; // Set the example student's marks.
+    StudentRecord students[] = {
+        {101, "Amit Patil", 85.5F},
+        {102, "Priya Shah", 91.0F},
+        {103, "Rohan Desai", 78.5F}
+    };
+    const int studentCount = sizeof(students) / sizeof(students[0]);
 
     {
         std::ofstream outputFile(
@@ -36,10 +30,17 @@ int main() { // Program execution starts here.
             return 1; // Stop if the record cannot be written.
         }
 
-        outputFile.write(
-            reinterpret_cast<const char*>(&student),
-            sizeof(student)
-        ); // Write the bytes occupied by the complete StudentRecord object.
+        for (int index = 0; index < studentCount; ++index) {
+            outputFile.write(
+                reinterpret_cast<const char*>(&students[index]),
+                sizeof(StudentRecord)
+            ); // Write each complete StudentRecord object as raw bytes.
+        }
+
+        if (!outputFile) {
+            std::cerr << "Error: Could not write all student records\n";
+            return 1;
+        }
     }
 
     StudentRecord readStudent{}; // Provides storage for the record read back from disk.
@@ -58,34 +59,26 @@ int main() { // Program execution starts here.
             return 1; // Stop if the saved record cannot be accessed.
         }
 
-        inputFile.read(
-            reinterpret_cast<char*>(&readStudent),
-            sizeof(readStudent)
-        ); // Read exactly one record's worth of bytes into the object.
+        for (int index = 0; index < studentCount; ++index) {
+            inputFile.read(
+                reinterpret_cast<char*>(&readStudent),
+                sizeof(readStudent)
+            ); // Read one complete record from the binary file.
 
-        if (!inputFile) { // Detect a failed or incomplete record read.
+            if (!inputFile) { // Detect a failed or incomplete record read.
 
-            std::cerr
-                << "Error: Could not read record from students.dat\n";
+                std::cerr
+                    << "Error: Could not read all records from students.dat\n";
 
-            return 1; // Stop rather than display invalid record data.
+                return 1; // Stop rather than display invalid record data.
+            }
+
+            std::cout << "Record " << index + 1 << '\n';
+            std::cout << "Roll Number: " << readStudent.rollNumber << '\n';
+            std::cout << "Name: " << readStudent.name << '\n';
+            std::cout << "Marks: " << readStudent.marks << "\n\n";
         }
     }
-
-    std::cout
-        << "Roll Number: "
-        << readStudent.rollNumber
-        << '\n'; // Display the roll number recovered from the binary file.
-
-    std::cout
-        << "Name: "
-        << readStudent.name
-        << '\n'; // Display the name recovered from the binary file.
-
-    std::cout
-        << "Marks: "
-        << readStudent.marks
-        << '\n'; // Display the marks recovered from the binary file.
 
     return 0; // Report successful completion.
 }

@@ -16,6 +16,11 @@ int main() { // Program execution starts here.
     std::size_t lineCount = 0; // Counts newline characters and a possible final line.
     std::size_t wordCount = 0; // Counts transitions from whitespace into words.
     std::size_t characterCount = 0; // Counts every character read from the file.
+    std::size_t vowelCount = 0;
+    std::size_t consonantCount = 0;
+    std::size_t digitCount = 0;
+    std::size_t spaceCount = 0;
+    std::size_t punctuationCount = 0;
 
     bool insideWord = false; // Tracks whether the current character is part of a word.
 
@@ -24,6 +29,23 @@ int main() { // Program execution starts here.
     while (inputFile.get(ch)) { // Process the file one character at a time.
 
         ++characterCount; // Include this character in the total.
+
+        const unsigned char character = static_cast<unsigned char>(ch);
+        if (std::isalpha(character)) {
+            const char lowercase = static_cast<char>(std::tolower(character));
+            if (lowercase == 'a' || lowercase == 'e' || lowercase == 'i' ||
+                lowercase == 'o' || lowercase == 'u') {
+                ++vowelCount;
+            } else {
+                ++consonantCount;
+            }
+        } else if (std::isdigit(character)) {
+            ++digitCount;
+        } else if (ch == ' ') {
+            ++spaceCount;
+        } else if (std::ispunct(character)) {
+            ++punctuationCount;
+        }
 
         if (ch == '\n') { // A newline terminates one line.
             ++lineCount; // Count the line ending just read.
@@ -65,6 +87,12 @@ int main() { // Program execution starts here.
     std::cout
         << "Characters: "
         << characterCount << '\n'; // Print the total number of characters.
+
+    std::cout << "Vowels: " << vowelCount << '\n';
+    std::cout << "Consonants: " << consonantCount << '\n';
+    std::cout << "Digits: " << digitCount << '\n';
+    std::cout << "Spaces: " << spaceCount << '\n';
+    std::cout << "Punctuation: " << punctuationCount << '\n';
 
     return 0; // Report successful completion.
 }

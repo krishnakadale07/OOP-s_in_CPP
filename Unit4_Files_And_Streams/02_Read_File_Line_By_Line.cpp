@@ -13,11 +13,13 @@ int main() { // Program execution starts here.
     }
 
     std::string line; // Holds one line read from the file at a time.
+    int lineNumber = 1; // Tracks the number of the current file line.
 
     std::cout << "File Content:\n"; // Print a heading before the file contents.
 
     while (std::getline(inputFile, line)) { // Read lines until the end of the file.
-        std::cout << line << '\n'; // Display the current line.
+        std::cout << lineNumber << ": " << line << '\n'; // Display the line number and current line.
+        ++lineNumber;
     }
 
     inputFile.close(); // Close the input file after reading.

@@ -4,20 +4,25 @@
 
 int main() { // Program execution starts here.
 
-    std::ifstream inputFile(
-        "missing_file.txt"
-    ); // Attempt to open a file that may not exist.
+    std::ifstream inputFile;
+    std::string fileName;
 
-    if (!inputFile.is_open()) { // Test whether the file stream successfully opened the file.
+    while (true) {
+        std::cout << "Enter file name: ";
 
-        std::cerr
-            << "Error: File could not be opened.\n";
+        if (!std::getline(std::cin, fileName)) {
+            std::cerr << "Error: No file name was entered.\n";
+            return 1;
+        }
 
-        std::cerr
-            << "Check whether missing_file.txt "
-            << "exists in the current folder.\n";
+        inputFile.open(fileName);
+        if (inputFile.is_open()) {
+            break;
+        }
 
-        return 1; // Stop because no file contents can be read.
+        std::cerr << "Error: Could not open '" << fileName
+                  << "'. Please try again.\n";
+        inputFile.clear();
     }
 
     std::string line; // Stores each line read from the input file.

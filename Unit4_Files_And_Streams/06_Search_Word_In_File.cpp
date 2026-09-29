@@ -1,6 +1,19 @@
+#include <cctype>   // Provides character case and punctuation classification.
 #include <fstream>  // Provides input file stream support.
 #include <iostream> // Provides console input and output streams.
 #include <string>   // Provides strings for the search term and file words.
+
+std::string normalizeWord(const std::string& text) {
+    std::string normalized;
+
+    for (unsigned char character : text) {
+        if (!std::ispunct(character)) {
+            normalized += static_cast<char>(std::tolower(character));
+        }
+    }
+
+    return normalized;
+}
 
 int main() { // Program execution starts here.
 
@@ -16,6 +29,7 @@ int main() { // Program execution starts here.
 
     std::cout << "Enter word to search: "; // Prompt for the exact word to find.
     std::cin >> searchWord; // Read one whitespace-delimited search word.
+    const std::string normalizedSearchWord = normalizeWord(searchWord);
 
     std::string word; // Holds each word extracted from the file.
 
@@ -23,7 +37,8 @@ int main() { // Program execution starts here.
 
     while (inputFile >> word) { // Read whitespace-separated words until the file ends.
 
-        if (word == searchWord) { // Compare the current word with the requested word.
+        if (!normalizedSearchWord.empty() &&
+            normalizeWord(word) == normalizedSearchWord) {
             ++count; // Increase the match total when they are equal.
         }
     }

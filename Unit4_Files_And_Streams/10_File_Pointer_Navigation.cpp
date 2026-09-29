@@ -58,6 +58,22 @@ int main() { // Program execution starts here.
 
     file << "F"; // Write F at position 5, extending the file to ABCDEF.
 
+    file.flush(); // Ensure the final character is written before seeking to read it.
+
+    file.seekg(-1, std::ios::end); // Move the input pointer to the last character.
+
+    char lastCharacter; // Receives the final character in the file.
+
+    if (!file.get(lastCharacter)) { // Read the character at the current input position.
+        std::cerr << "Error: Could not read the last character.\n";
+        return 1;
+    }
+
+    std::cout
+        << "Last character: "
+        << lastCharacter
+        << '\n';
+
     file.close(); // Close the file after all pointer operations are complete.
 
     std::cout
